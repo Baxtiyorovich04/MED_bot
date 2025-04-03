@@ -1,0 +1,20 @@
+{
+    "ru": {
+        "address": "г. Ташкент, ул. Примерная, 123",
+        "phone": "+998 90 123 45 67",
+        "working_hours": "🕒 Режим работы:\n\nПн-Пт: 9:00 - 18:00\nСб: 9:00 - 14:00\nВс: Выходной",
+        "location": {
+            "latitude": 41.311081,
+            "longitude": 69.240562
+        }
+    },
+    "uz": {
+        "address": "Toshkent sh., Namuna ko'chasi, 123",
+        "phone": "+998 90 123 45 67",
+        "working_hours": "🕒 Ish vaqti:\n\nDush-Pay: 9:00 - 18:00\nShanba: 9:00 - 14:00\nYakshanba: Dam olish kuni",
+        "location": {
+            "latitude": 41.311081,
+            "longitude": 69.240562
+        }
+    }
+} 

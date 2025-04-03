@@ -1,0 +1,178 @@
+{
+    "Урология": {
+        "ru": {
+            "name": "Урология",
+            "services": [
+                {
+                    "name": "Консультация уролога",
+                    "price": "150 000 сум"
+                },
+                {
+                    "name": "УЗИ почек",
+                    "price": "120 000 сум"
+                },
+                {
+                    "name": "Анализ мочи",
+                    "price": "80 000 сум"
+                }
+            ]
+        },
+        "uz": {
+            "name": "Urologiya",
+            "services": [
+                {
+                    "name": "Urolog konsultatsiyasi",
+                    "price": "150 000 so'm"
+                },
+                {
+                    "name": "Buyrak UZI",
+                    "price": "120 000 so'm"
+                },
+                {
+                    "name": "Sidik tahlili",
+                    "price": "80 000 so'm"
+                }
+            ]
+        }
+    },
+    "Гинекология": {
+        "ru": {
+            "name": "Гинекология",
+            "services": [
+                {
+                    "name": "Консультация гинеколога",
+                    "price": "150 000 сум"
+                },
+                {
+                    "name": "УЗИ органов малого таза",
+                    "price": "130 000 сум"
+                },
+                {
+                    "name": "Мазок на флору",
+                    "price": "90 000 сум"
+                }
+            ]
+        },
+        "uz": {
+            "name": "Ginekologiya",
+            "services": [
+                {
+                    "name": "Ginekolog konsultatsiyasi",
+                    "price": "150 000 so'm"
+                },
+                {
+                    "name": "Kichik chanoq a'zolari UZI",
+                    "price": "130 000 so'm"
+                },
+                {
+                    "name": "Flora uchun surunkali",
+                    "price": "90 000 so'm"
+                }
+            ]
+        }
+    },
+    "Кардиология": {
+        "ru": {
+            "name": "Кардиология",
+            "services": [
+                {
+                    "name": "Консультация кардиолога",
+                    "price": "150 000 сум"
+                },
+                {
+                    "name": "ЭКГ с расшифровкой",
+                    "price": "120 000 сум"
+                },
+                {
+                    "name": "Анализ крови на холестерин",
+                    "price": "80 000 сум"
+                }
+            ]
+        },
+        "uz": {
+            "name": "Kardiologiya",
+            "services": [
+                {
+                    "name": "Kardiolog konsultatsiyasi",
+                    "price": "150 000 so'm"
+                },
+                {
+                    "name": "EKG tahlili bilan",
+                    "price": "120 000 so'm"
+                },
+                {
+                    "name": "Xolesterin uchun qon tahlili",
+                    "price": "80 000 so'm"
+                }
+            ]
+        }
+    },
+    "ru": {
+        "services": [
+            {
+                "id": "urology",
+                "name": "Урология",
+                "price": "от 100,000 сум"
+            },
+            {
+                "id": "gynecology",
+                "name": "Гинекология",
+                "price": "от 100,000 сум"
+            },
+            {
+                "id": "cardiology",
+                "name": "Кардиология",
+                "price": "от 100,000 сум"
+            },
+            {
+                "id": "ultrasound",
+                "name": "УЗИ",
+                "price": "от 80,000 сум"
+            },
+            {
+                "id": "lab_tests",
+                "name": "Лабораторные анализы",
+                "price": "от 50,000 сум"
+            },
+            {
+                "id": "therapy",
+                "name": "Терапия",
+                "price": "от 100,000 сум"
+            }
+        ]
+    },
+    "uz": {
+        "services": [
+            {
+                "id": "urology",
+                "name": "Urologiya",
+                "price": "100,000 so'mdan"
+            },
+            {
+                "id": "gynecology",
+                "name": "Ginekologiya",
+                "price": "100,000 so'mdan"
+            },
+            {
+                "id": "cardiology",
+                "name": "Kardiologiya",
+                "price": "100,000 so'mdan"
+            },
+            {
+                "id": "ultrasound",
+                "name": "UZI",
+                "price": "80,000 so'mdan"
+            },
+            {
+                "id": "lab_tests",
+                "name": "Laboratoriya tahlillari",
+                "price": "50,000 so'mdan"
+            },
+            {
+                "id": "therapy",
+                "name": "Terapiya",
+                "price": "100,000 so'mdan"
+            }
+        ]
+    }
+} 
