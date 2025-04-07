@@ -15,7 +15,8 @@ from appointment import (
     start_appointment,
     process_name,
     process_phone,
-    process_service_selection
+    process_service_selection,
+    process_date
 )
 
 # Force output to console
@@ -56,7 +57,9 @@ logger.info(f"Bot token loaded: {BOT_TOKEN[:5]}...")
 print("Initializing bot and dispatcher...")
 logger.info("Initializing bot and dispatcher...")
 try:
+    # Create bot
     bot = Bot(token=BOT_TOKEN)
+    bot.parse_mode = "HTML"  # Set parse mode after bot creation
     dp = Dispatcher()
 except Exception as e:
     print(f"Error initializing bot: {e}")
@@ -261,6 +264,12 @@ async def appointment_phone(message: types.Message, state: FSMContext):
     lang = user_languages.get(user_id, 'ru')
     await process_phone(message, state, lang)
 
+@dp.message(AppointmentStates.waiting_for_date)
+async def appointment_date(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    lang = user_languages.get(user_id, 'ru')
+    await process_date(message, state, lang)
+
 @dp.callback_query(lambda c: c.data.startswith('appointment_service_'))
 async def appointment_service(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
@@ -276,17 +285,15 @@ async def make_another_appointment(callback: types.CallbackQuery, state: FSMCont
     await callback.answer()
 
 async def main():
-    session = None
     try:
         print("Starting bot...")
         logger.info("Starting bot...")
         
-        # Configure longer timeouts and connection settings
-        timeout = ClientTimeout(total=30)  # 30 seconds total timeout
-        connector = TCPConnector(force_close=True, enable_cleanup_closed=True)
-        session = ClientSession(timeout=timeout, connector=connector)
-        
-        # Create bot with custom session
+        # Configure session
+        session = ClientSession(
+            timeout=ClientTimeout(total=30),
+            connector=TCPConnector(force_close=True, enable_cleanup_closed=True)
+        )
         bot._session = session
         
         # Test the bot connection
@@ -299,13 +306,24 @@ async def main():
             logger.error(f"Failed to connect to Telegram: {e}")
             raise
         
-        # Start polling with proper cleanup
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        # Start polling with proper cleanup and error handling
+        await dp.start_polling(
+            bot,
+            allowed_updates=dp.resolve_used_update_types(),
+            handle_signals=True,
+            polling_timeout=30,
+            drop_pending_updates=True,
+            close_bot_session=True
+        )
     except Exception as e:
         print(f"Error starting bot: {e}")
         logger.error(f"Error starting bot: {e}")
         raise
     finally:
+        # Close bot session
+        if not bot.session.closed:
+            await bot.session.close()
+        # Close aiohttp session
         if session and not session.closed:
             await session.close()
 
@@ -318,8 +336,13 @@ if __name__ == '__main__':
         # Set longer timeout for Windows
         if sys.platform == 'win32':
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-            
-        asyncio.run(main())
+        
+        # Create new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Run the main function
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("Bot stopped by user")
         logger.info("Bot stopped by user")
@@ -327,5 +350,8 @@ if __name__ == '__main__':
         print(f"Fatal error: {e}")
         logger.error(f"Fatal error: {e}")
         sys.exit(1)
+    finally:
+        # Clean up the event loop
+        loop.close()
 
   

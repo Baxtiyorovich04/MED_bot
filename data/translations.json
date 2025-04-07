@@ -1,6 +1,6 @@
 {
     "ru": {
-        "welcome": "Добро пожаловать! Выберите действие:",
+        "welcome": "Добро пожаловать в MedadMed! Выберите действие:",
         "contacts": "📞 Контакты",
         "appointment": "🗓 Записаться на приём",
         "about_clinic": "🏥 О клинике",
@@ -13,7 +13,8 @@
         "about_clinic_text": "🏥 О нашей клинике\n\nМы предоставляем качественные медицинские услуги с использованием современного оборудования и опытных специалистов.\n\nНаша миссия - забота о здоровье каждого пациента.",
         "contact_info": "Выберите нужную информацию:",
         "enter_name": "👤 Введите ваше имя:",
-        "enter_phone": "📱 Введите ваш номер телефона:",
+        "enter_phone": "📱 Введите ваш номер телефона или нажмите кнопку ниже:",
+        "send_contact": "📱 Отправить контакт",
         "select_service": "🏥 Выберите услугу:",
         "services_categories": [
             "✅ Урология",
@@ -21,7 +22,20 @@
             "✅ Кардиология",
             "✅ УЗИ",
             "✅ Лабораторные анализы",
-            "✅ Терапия"
+            "✅ Терапия",
+            "✅ Андрология",
+            "✅ Детская урология",
+            "✅ Неврология",
+            "✅ Ортопедия",
+            "✅ Психоневрология",
+            "✅ Кардиология",
+            "✅ Гинекология",
+            "✅ Урология",
+            "✅ Андрология",
+            "✅ Массаж",
+            "✅ Стационарное лечение",
+            "✅ Кардиология",
+            "✅ Хирург"
         ],
         "appointment_confirmed": "✅ Запись подтверждена!",
         "name": "👤 Имя",
@@ -32,7 +46,7 @@
         "back_to_main": "🏠 Главное меню"
     },
     "uz": {
-        "welcome": "Meditsina markaziga xush kelibsiz! Kerakli bo'limni tanlang:",
+        "welcome": "MedadMed markaziga xush kelibsiz! Kerakli bo'limni tanlang:",
         "contacts": "📞 Aloqa",
         "appointment": "🗓 Qabulga yozilish",
         "about_clinic": "🏥 Klinika haqida",
@@ -45,7 +59,8 @@
         "about_clinic_text": "🏥 Klinikamiz haqida\n\nBiz zamonaviy jihozlar va tajribali mutaxassislar yordamida sifatli tibbiy xizmatlar ko'rsatamiz.\n\nBizning maqsadimiz - har bir bemorning salomatligi haqida qayg'urish.",
         "contact_info": "Kerakli ma'lumotni tanlang:",
         "enter_name": "👤 Ismingizni kiriting:",
-        "enter_phone": "📱 Telefon raqamingizni yuboring:",
+        "enter_phone": "📱 Telefon raqamingizni yuboring yoki quyidagi tugmani bosing:",
+        "send_contact": "📱 Kontaktni yuborish",
         "select_service": "🏥 Xizmatni tanlang:",
         "services_categories": [
             "✅ Urologiya",
@@ -53,14 +68,27 @@
             "✅ Kardiologiya",
             "✅ UZI",
             "✅ Laboratoriya tahlillari",
-            "✅ Terapiya"
+            "✅ Terapiya",
+            "✅ Andrologiya",
+            "✅ Bolalar urologiyasi",
+            "✅ Nevrologiya",
+            "✅ Ortopediya",
+            "✅ Psixonevrologiya",
+            "✅ Kardiologiya",
+            "✅ Ginekologiya",
+            "✅ Urologiya",
+            "✅ Andrologiya",
+            "✅ Massaj",
+            "✅ Statsionar davolash",
+            "✅ Kardiologiya",
+            "✅ Jarrohlik"
         ],
         "appointment_confirmed": "✅ Qabul tasdiqlandi!",
         "name": "👤 Ism",
         "phone": "📞 Telefon",
         "service": "🏥 Xizmat",
         "back_to_menu": "Keyingi amalni tanlang:",
-        "make_another_appointment": "�� Yana qabulga yozilish",
+        "make_another_appointment": "📝 Yana qabulga yozilish",
         "back_to_main": "🏠 Asosiy menyu"
     }
 } 
