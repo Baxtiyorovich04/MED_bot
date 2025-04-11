@@ -30,38 +30,8 @@ class AppointmentStates(StatesGroup):
 
 async def start_appointment(message: types.Message, state: FSMContext, lang: str):
     try:
-        # Create keyboard for service selection with 3 columns
-        keyboard = InlineKeyboardBuilder()
-        
-        # Add service buttons in 3 columns
-        for service_id, service in services[lang].items():
-            # Shorten service name if needed
-            service_name = service['name']
-            if len(service_name) > 15:
-                service_name = service_name[:15] + "..."
-            
-            keyboard.button(
-                text=service_name,
-                callback_data=f"appointment_service_{service_id}"
-            )
-        
-        # Adjust to 3 columns
-        keyboard.adjust(3)
-        
-        # Add back button
-        keyboard.button(
-            text=translations[lang]['back'],
-            callback_data="back_to_main"
-        )
-        
-        await message.answer(
-            text=translations[lang]['select_service'],
-            reply_markup=keyboard.as_markup()
-        )
-        
-        # Set state to waiting for service selection
-        await state.set_state(AppointmentStates.waiting_for_service)
-        
+        await message.answer(translations[lang]['enter_name'])
+        await state.set_state(AppointmentStates.waiting_for_name)
     except Exception as e:
         print(f"Error in start_appointment: {e}")
         await message.answer(translations[lang]['error_occurred'])
@@ -69,33 +39,45 @@ async def start_appointment(message: types.Message, state: FSMContext, lang: str
 
 async def process_name(message: types.Message, state: FSMContext, lang: str):
     """Process the user's name"""
-    # Store the name in state
-    await state.update_data(name=message.text)
-    await state.set_state(AppointmentStates.waiting_for_phone)
-    
-    # Create keyboard with contact button
-    keyboard = types.ReplyKeyboardMarkup(
-        keyboard=[[types.KeyboardButton(text=translations[lang]['send_contact'], request_contact=True)]],
-        resize_keyboard=True,
-        one_time_keyboard=True
-    )
-    
-    await message.answer(translations[lang]['enter_phone'], reply_markup=keyboard)
+    try:
+        # Store the name in state
+        await state.update_data(name=message.text)
+        
+        # Create keyboard with contact button
+        keyboard = types.ReplyKeyboardMarkup(
+            keyboard=[[types.KeyboardButton(text=translations[lang]['share_contact'], request_contact=True)]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        
+        # Send message with contact button
+        await message.answer(
+            translations[lang]['enter_phone'],
+            reply_markup=keyboard
+        )
+        
+        # Set state to waiting for phone
+        await state.set_state(AppointmentStates.waiting_for_phone)
+        
+    except Exception as e:
+        print(f"Error in process_name: {e}")
+        await message.answer(translations[lang]['error_occurred'])
+        await state.clear()
 
 async def process_phone(message: types.Message, state: FSMContext, lang: str):
     try:
         # Get phone number from message
-        phone = message.text
-        
-        # If it's a contact message, get the phone number from contact
         if message.contact:
             phone = message.contact.phone_number
+        else:
+            phone = message.text.strip()
         
         # Format phone number
+        phone = ''.join(c for c in phone if c.isdigit() or c == '+')
         if not phone.startswith('+'):
             phone = '+' + phone
         
-        # Update state with phone number
+        # Store the formatted phone number
         await state.update_data(phone=phone)
         
         # Create keyboard for date selection
@@ -126,6 +108,9 @@ async def process_phone(message: types.Message, state: FSMContext, lang: str):
         # Adjust to 2 columns
         keyboard.adjust(2)
         
+        # Remove the contact keyboard
+        remove_keyboard = types.ReplyKeyboardRemove()
+        
         await message.answer(
             text=translations[lang]['select_date'],
             reply_markup=keyboard.as_markup()
@@ -141,37 +126,55 @@ async def process_phone(message: types.Message, state: FSMContext, lang: str):
 
 async def process_date(message: types.Message, state: FSMContext, lang: str):
     """Process the selected date"""
-    date = message.text
-    await state.update_data(date=date)
-    await state.set_state(AppointmentStates.waiting_for_service)
-    
-    # Create service selection keyboard with 2 buttons per row
-    keyboard = InlineKeyboardBuilder()
-    
-    # Get unique services (remove duplicates)
-    unique_services = []
-    seen_names = set()
-    for service in services[lang]['services']:
-        if service['name'] not in seen_names:
-            seen_names.add(service['name'])
-            unique_services.append(service)
-    
-    # Add buttons with simplified names
-    for service in unique_services:
-        # Make names shorter
-        if lang == 'ru':
-            name = service['name'].replace('Консультация ', '').replace('Анализ ', '')
+    try:
+        # Get the date from callback data
+        if message.text.startswith('date_'):
+            date_type = message.text.split('_')[1]
+            if date_type == 'today':
+                date = translations[lang]['today']
+            elif date_type == 'tomorrow':
+                date = translations[lang]['tomorrow']
+            elif date_type == 'day_after_tomorrow':
+                date = translations[lang]['day_after_tomorrow']
+            else:
+                date = translations[lang]['other_date']
         else:
-            name = service['name'].replace('konsultatsiyasi', '').replace('tahlili', '')
-        keyboard.button(text=name, callback_data=f"appointment_service_{service['id']}")
-    
-    keyboard.button(text=translations[lang]['back'], callback_data="back_to_main")
-    keyboard.adjust(2)  # Arrange buttons in 2 columns
-    
-    await message.answer(
-        translations[lang]['select_service'],
-        reply_markup=keyboard.as_markup()
-    )
+            date = message.text
+            
+        # Store the date in state
+        await state.update_data(date=date)
+        
+        # Create service selection keyboard with 2 buttons per row
+        keyboard = InlineKeyboardBuilder()
+        
+        # Add service buttons in 2 columns
+        for service_id, service in services[lang].items():
+            # Shorten service name if needed
+            service_name = service['name']
+            if len(service_name) > 20:  # Allow slightly longer names
+                service_name = service_name[:20] + "..."
+            
+            keyboard.button(
+                text=service_name,
+                callback_data=f"appointment_service_{service_id}"
+            )
+        
+        # Adjust to 2 columns and add back button
+        keyboard.adjust(2)
+        keyboard.button(text=translations[lang]['back'], callback_data="back_to_main")
+        
+        # Send service selection message
+        await message.answer(
+            translations[lang]['select_service'],
+            reply_markup=keyboard.as_markup()
+        )
+        
+        # Set state to waiting for service
+        await state.set_state(AppointmentStates.waiting_for_service)
+    except Exception as e:
+        print(f"Error in process_date: {e}")
+        await message.answer(translations[lang]['error_occurred'])
+        await state.clear()
 
 async def process_service_selection(callback: types.CallbackQuery, state: FSMContext, lang: str):
     try:
@@ -180,9 +183,6 @@ async def process_service_selection(callback: types.CallbackQuery, state: FSMCon
         
         # Get service details
         service = services[lang][service_id]
-        
-        # Update state with selected service
-        await state.update_data(service=service['name'])
         
         # Get user data
         data = await state.get_data()
@@ -200,13 +200,14 @@ async def process_service_selection(callback: types.CallbackQuery, state: FSMCon
         )
         
         # Send to admin
-        await callback.bot.send_message(
-            chat_id=ADMIN_ID,
-            text=admin_message
-        )
+        if ADMIN_ID:
+            await callback.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=admin_message
+            )
         
         # Send confirmation to user
-        user_message = translations[lang]['appointment_confirmed']
+        user_message = "✅ Запись подтверждена!\nСкоро администраторы с вами свяжутся."
         keyboard = InlineKeyboardBuilder()
         keyboard.button(
             text=translations[lang]['make_another_appointment'],

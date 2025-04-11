@@ -2,6 +2,8 @@ import os
 import json
 import logging
 import sys
+import ssl
+import certifi
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -9,7 +11,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardBu
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiohttp import ClientTimeout, ClientSession, TCPConnector
+from aiohttp import ClientTimeout, ClientSession, TCPConnector, ClientError
+from aiohttp.client import _RequestContextManager
 from appointment import (
     AppointmentStates,
     start_appointment,
@@ -40,41 +43,26 @@ user_languages = {}
 print("Loading environment variables...")
 logger.info("Loading environment variables...")
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 
+# Get token from environment variable
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    print("Error: No BOT_TOKEN found in .env file!")
-    logger.error("No BOT_TOKEN found in .env file!")
-    raise ValueError("No BOT_TOKEN found in .env file!")
+    print("Error: BOT_TOKEN not found in environment variables!")
+    logger.error("BOT_TOKEN not found in environment variables!")
+    raise ValueError("BOT_TOKEN not found in environment variables!")
 
-# Remove any quotes if present
-BOT_TOKEN = BOT_TOKEN.strip('"').strip("'")
+print("Bot token loaded successfully")
+logger.info("Bot token loaded successfully")
 
-print(f"Bot token loaded: {BOT_TOKEN[:5]}...")
-logger.info(f"Bot token loaded: {BOT_TOKEN[:5]}...")
+# Initialize dispatcher
+print("Initializing dispatcher...")
+logger.info("Initializing dispatcher...")
+dp = Dispatcher()
 
-# Initialize bot and dispatcher
-print("Initializing bot and dispatcher...")
-logger.info("Initializing bot and dispatcher...")
+# Load data files
+print("Loading data files...")
+logger.info("Loading data files...")
 try:
-    # Create bot
-    bot = Bot(token=BOT_TOKEN)
-    bot.parse_mode = "HTML"  # Set parse mode after bot creation
-    dp = Dispatcher()
-except Exception as e:
-    print(f"Error initializing bot: {e}")
-    logger.error(f"Error initializing bot: {e}")
-    raise
-
-# Test bot connection
-@dp.message(Command("test"))
-async def cmd_test(message: types.Message):
-    await message.answer("Bot is working! 🎉")
-
-try:
-    # Load data files
-    print("Loading data files...")
-    logger.info("Loading data files...")
     with open('data/translations.json', 'r', encoding='utf-8') as f:
         translations = json.load(f)
         print("Translations loaded successfully")
@@ -162,37 +150,37 @@ async def process_contact_info(callback: types.CallbackQuery):
         if info_type == 'location':
             location = contacts[lang]['location']
             try:
-                # Send video first
-                video_path = f"data/videos/location_{lang}.mp4"
-                if os.path.exists(video_path):
-                    video_file = FSInputFile(video_path)
-                    await callback.message.answer_video_note(
-                        video_note=video_file
-                    )
-                    # Send caption as a separate message
-                    await callback.message.answer(translations[lang]['location_caption'])
-                else:
-                    await callback.message.answer(f"⚠️ Видео недоступно: {video_path}")
-                
-                # Then send location
+                # Send location first
                 await callback.message.answer_location(
                     latitude=location['latitude'],
                     longitude=location['longitude']
                 )
+                # Then send caption
+                await callback.message.answer(translations[lang]['location_caption'])
+                
+                # Also send video
+                video_path = f"data/videos/clinic_{lang}.mp4"
+                if os.path.exists(video_path):
+                    video_file = FSInputFile(video_path)
+                    await callback.message.answer_video(
+                        video=video_file,
+                        caption=translations[lang]['video_caption']
+                    )
+                else:
+                    await callback.message.answer(f"⚠️ Видео недоступно: {video_path}")
             except Exception as e:
-                print(f"Error sending location: {e}")
-                await callback.message.answer(f"⚠️ Ошибка при отправке локации: {str(e)}")
+                print(f"Error sending location/video: {e}")
+                await callback.message.answer(f"⚠️ Ошибка при отправке: {str(e)}")
                 
         elif info_type == 'video':
             try:
                 video_path = f"data/videos/clinic_{lang}.mp4"
                 if os.path.exists(video_path):
                     video_file = FSInputFile(video_path)
-                    await callback.message.answer_video_note(
-                        video_note=video_file
+                    await callback.message.answer_video(
+                        video=video_file,
+                        caption=translations[lang]['video_caption']
                     )
-                    # Send caption as a separate message
-                    await callback.message.answer(translations[lang]['video_caption'])
                 else:
                     await callback.message.answer(f"⚠️ Видео недоступно: {video_path}")
             except Exception as e:
@@ -264,6 +252,31 @@ async def appointment_phone(message: types.Message, state: FSMContext):
     lang = user_languages.get(user_id, 'ru')
     await process_phone(message, state, lang)
 
+@dp.callback_query(lambda c: c.data.startswith('date_'))
+async def appointment_date_callback(callback: types.CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    lang = user_languages.get(user_id, 'ru')
+    
+    try:
+        # Get the date type from callback data
+        date_type = callback.data.split('_')[1]
+        
+        # Create a message object with the date text
+        message = types.Message(
+            message_id=callback.message.message_id,
+            date=callback.message.date,
+            chat=callback.message.chat,
+            text=callback.data
+        )
+        
+        # Process the date selection
+        await process_date(message, state, lang)
+        await callback.answer()
+    except Exception as e:
+        print(f"Error in date callback: {e}")
+        await callback.message.answer(translations[lang]['error_occurred'])
+        await state.clear()
+
 @dp.message(AppointmentStates.waiting_for_date)
 async def appointment_date(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
@@ -276,7 +289,6 @@ async def appointment_service(callback: types.CallbackQuery, state: FSMContext):
     lang = user_languages.get(user_id, 'ru')
     await process_service_selection(callback, state, lang)
 
-# Add handler for "make another appointment" button
 @dp.callback_query(lambda c: c.data == "make_another_appointment")
 async def make_another_appointment(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
@@ -285,16 +297,14 @@ async def make_another_appointment(callback: types.CallbackQuery, state: FSMCont
     await callback.answer()
 
 async def main():
+    bot = None
     try:
         print("Starting bot...")
         logger.info("Starting bot...")
         
-        # Configure session
-        session = ClientSession(
-            timeout=ClientTimeout(total=30),
-            connector=TCPConnector(force_close=True, enable_cleanup_closed=True)
-        )
-        bot._session = session
+        # Create bot with default session
+        bot = Bot(token=BOT_TOKEN)
+        bot.parse_mode = "HTML"
         
         # Test the bot connection
         try:
@@ -306,7 +316,7 @@ async def main():
             logger.error(f"Failed to connect to Telegram: {e}")
             raise
         
-        # Start polling with proper cleanup and error handling
+        # Start polling with proper cleanup
         await dp.start_polling(
             bot,
             allowed_updates=dp.resolve_used_update_types(),
@@ -321,11 +331,8 @@ async def main():
         raise
     finally:
         # Close bot session
-        if not bot.session.closed:
+        if bot:
             await bot.session.close()
-        # Close aiohttp session
-        if session and not session.closed:
-            await session.close()
 
 if __name__ == '__main__':
     try:
