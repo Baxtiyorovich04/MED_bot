@@ -127,19 +127,22 @@ async def process_phone(message: types.Message, state: FSMContext, lang: str):
 async def process_date(message: types.Message, state: FSMContext, lang: str):
     """Process the selected date"""
     try:
-        # Get the date from callback data
-        if message.text.startswith('date_'):
-            date_type = message.text.split('_')[1]
-            if date_type == 'today':
-                date = translations[lang]['today']
-            elif date_type == 'tomorrow':
-                date = translations[lang]['tomorrow']
-            elif date_type == 'day_after_tomorrow':
-                date = translations[lang]['day_after_tomorrow']
+        # Get the date from callback data or message text
+        if hasattr(message, 'text'):
+            if message.text.startswith('date_'):
+                date_type = message.text.split('_')[1]
+                if date_type == 'today':
+                    date = translations[lang]['today']
+                elif date_type == 'tomorrow':
+                    date = translations[lang]['tomorrow']
+                elif date_type == 'day_after_tomorrow':
+                    date = translations[lang]['day_after_tomorrow']
+                else:
+                    date = translations[lang]['other_date']
             else:
-                date = translations[lang]['other_date']
+                date = message.text
         else:
-            date = message.text
+            date = translations[lang]['other_date']
             
         # Store the date in state
         await state.update_data(date=date)

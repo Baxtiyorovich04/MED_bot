@@ -159,7 +159,7 @@ async def process_contact_info(callback: types.CallbackQuery):
                 await callback.message.answer(translations[lang]['location_caption'])
                 
                 # Also send video
-                video_path = f"data/videos/clinic_{lang}.mp4"
+                video_path = f"data/videos/location.mp4"
                 if os.path.exists(video_path):
                     video_file = FSInputFile(video_path)
                     await callback.message.answer_video(
@@ -174,7 +174,7 @@ async def process_contact_info(callback: types.CallbackQuery):
                 
         elif info_type == 'video':
             try:
-                video_path = f"data/videos/clinic_{lang}.mp4"
+                video_path = f"data/videos/clinic.mp4"
                 if os.path.exists(video_path):
                     video_file = FSInputFile(video_path)
                     await callback.message.answer_video(
