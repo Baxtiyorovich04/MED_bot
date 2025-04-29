@@ -18,8 +18,7 @@ from appointment import (
     start_appointment,
     process_name,
     process_phone,
-    process_service_selection,
-    process_date
+    process_service_selection
 )
 
 # Force output to console
@@ -47,9 +46,17 @@ load_dotenv()
 # Get token from environment variable
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
-    print("Error: BOT_TOKEN not found in environment variables!")
-    logger.error("BOT_TOKEN not found in environment variables!")
-    raise ValueError("BOT_TOKEN not found in environment variables!")
+    error_msg = "Error: BOT_TOKEN not found in environment variables!"
+    print(error_msg)
+    logger.error(error_msg)
+    raise ValueError(error_msg)
+
+# Validate token format
+if ":" not in BOT_TOKEN:
+    error_msg = "Error: Invalid BOT_TOKEN format! Token should contain ':'"
+    print(error_msg)
+    logger.error(error_msg)
+    raise ValueError(error_msg)
 
 print("Bot token loaded successfully")
 logger.info("Bot token loaded successfully")
@@ -252,22 +259,6 @@ async def appointment_phone(message: types.Message, state: FSMContext):
     lang = user_languages.get(user_id, 'ru')
     await process_phone(message, state, lang)
 
-@dp.callback_query(lambda c: c.data.startswith('date_'))
-async def appointment_date(callback_query: types.CallbackQuery, state: FSMContext):
-    """Handle date selection"""
-    try:
-        # Get user's language
-        lang = user_languages.get(callback_query.from_user.id, 'ru')
-        
-        # Process the date selection
-        await process_date(callback_query.message, state, lang)
-        
-        # Answer the callback query
-        await callback_query.answer()
-    except Exception as e:
-        print(f"Error in appointment_date handler: {e}")
-        await callback_query.answer(translations[lang]['error_occurred'])
-
 @dp.callback_query(lambda c: c.data == "make_another_appointment")
 async def make_another_appointment(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
@@ -277,12 +268,23 @@ async def make_another_appointment(callback: types.CallbackQuery, state: FSMCont
 
 async def main():
     bot = None
+    session = None
     try:
         print("Starting bot...")
         logger.info("Starting bot...")
         
-        # Create bot with default session
-        bot = Bot(token=BOT_TOKEN)
+        # Create SSL context
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        
+        # Create connector with SSL context
+        connector = TCPConnector(ssl=ssl_context)
+        
+        # Create session with timeout
+        timeout = ClientTimeout(total=30)
+        session = ClientSession(connector=connector, timeout=timeout)
+        
+        # Create bot with custom session
+        bot = Bot(token=BOT_TOKEN, session=session)
         bot.parse_mode = "HTML"
         
         # Test the bot connection
@@ -291,8 +293,9 @@ async def main():
             print(f"Bot connected successfully! Bot username: @{bot_info.username}")
             logger.info(f"Bot connected successfully! Bot username: @{bot_info.username}")
         except Exception as e:
-            print(f"Failed to connect to Telegram: {e}")
-            logger.error(f"Failed to connect to Telegram: {e}")
+            error_msg = f"Failed to connect to Telegram: {str(e)}"
+            print(error_msg)
+            logger.error(error_msg)
             raise
         
         # Start polling with proper cleanup
@@ -305,13 +308,17 @@ async def main():
             close_bot_session=True
         )
     except Exception as e:
-        print(f"Error starting bot: {e}")
-        logger.error(f"Error starting bot: {e}")
+        error_msg = f"Error starting bot: {str(e)}"
+        print(error_msg)
+        logger.error(error_msg)
         raise
     finally:
         # Close bot session
         if bot:
             await bot.session.close()
+        # Close aiohttp session
+        if session:
+            await session.close()
 
 if __name__ == '__main__':
     try:

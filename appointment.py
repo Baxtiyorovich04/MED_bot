@@ -25,7 +25,6 @@ except (ValueError, TypeError):
 class AppointmentStates(StatesGroup):
     waiting_for_name = State()
     waiting_for_phone = State()
-    waiting_for_date = State()
     waiting_for_service = State()
     waiting_for_confirmation = State()
 
@@ -81,68 +80,7 @@ async def process_phone(message: types.Message, state: FSMContext, lang: str):
         # Store the formatted phone number
         await state.update_data(phone=phone)
         
-        # Create keyboard for date selection
-        keyboard = InlineKeyboardBuilder()
-        keyboard.button(
-            text=translations[lang]['today'],
-            callback_data="date_today"
-        )
-        keyboard.button(
-            text=translations[lang]['tomorrow'],
-            callback_data="date_tomorrow"
-        )
-        keyboard.button(
-            text=translations[lang]['day_after_tomorrow'],
-            callback_data="date_day_after_tomorrow"
-        )
-        keyboard.button(
-            text=translations[lang]['other_date'],
-            callback_data="date_other"
-        )
-        
-        # Add back button
-        keyboard.button(
-            text=translations[lang]['back'],
-            callback_data="back_to_main"
-        )
-        
-        # Adjust to 2 columns
-        keyboard.adjust(2)
-        
-        # Remove the contact keyboard
-        remove_keyboard = types.ReplyKeyboardRemove()
-        
-        await message.answer(
-            text=translations[lang]['select_date'],
-            reply_markup=keyboard.as_markup()
-        )
-        
-        # Set state to waiting for date selection
-        await state.set_state(AppointmentStates.waiting_for_date)
-        
-    except Exception as e:
-        print(f"Error in process_phone: {e}")
-        await message.answer(translations[lang]['error_occurred'])
-        await state.clear()
-
-async def process_date(message: types.Message, state: FSMContext, lang: str):
-    """Process the selected date"""
-    try:
-        # Get the date from callback data
-        date_type = message.text.split('_')[1]
-        if date_type == 'today':
-            date = translations[lang]['today']
-        elif date_type == 'tomorrow':
-            date = translations[lang]['tomorrow']
-        elif date_type == 'day_after_tomorrow':
-            date = translations[lang]['day_after_tomorrow']
-        else:
-            date = translations[lang]['other_date']
-            
-        # Store the date in state
-        await state.update_data(date=date)
-        
-        # Create service selection keyboard with 2 buttons per row
+        # Create service selection keyboard
         keyboard = InlineKeyboardBuilder()
         
         # Add service buttons in 2 columns
@@ -161,16 +99,26 @@ async def process_date(message: types.Message, state: FSMContext, lang: str):
         keyboard.adjust(2)
         keyboard.button(text=translations[lang]['back'], callback_data="back_to_main")
         
+        # Remove the contact keyboard
+        remove_keyboard = types.ReplyKeyboardRemove()
+        
+        # Send message about admin contact
+        await message.answer(
+            text=translations[lang]['admin_contact'],
+            reply_markup=remove_keyboard
+        )
+        
         # Send service selection message
         await message.answer(
-            translations[lang]['select_service'],
+            text=translations[lang]['select_service'],
             reply_markup=keyboard.as_markup()
         )
         
         # Set state to waiting for service
         await state.set_state(AppointmentStates.waiting_for_service)
+        
     except Exception as e:
-        print(f"Error in process_date: {e}")
+        print(f"Error in process_phone: {e}")
         await message.answer(translations[lang]['error_occurred'])
         await state.clear()
 
@@ -186,14 +134,12 @@ async def process_service_selection(callback: types.CallbackQuery, state: FSMCon
         data = await state.get_data()
         name = data.get('name', 'Не указано')
         phone = data.get('phone', 'Не указан')
-        date = data.get('date', 'Не указана')
         
         # Send confirmation to admin
         admin_message = (
             f"📝 Новая запись!\n\n"
             f"👤 Имя: {name}\n"
             f"📞 Телефон: {phone}\n"
-            f"📅 Дата: {date}\n"
             f"🏥 Услуга: {service['name']}"
         )
         
