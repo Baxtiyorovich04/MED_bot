@@ -27,6 +27,7 @@ class AppointmentStates(StatesGroup):
     waiting_for_phone = State()
     waiting_for_date = State()
     waiting_for_service = State()
+    waiting_for_confirmation = State()
 
 async def start_appointment(message: types.Message, state: FSMContext, lang: str):
     try:
@@ -127,20 +128,14 @@ async def process_phone(message: types.Message, state: FSMContext, lang: str):
 async def process_date(message: types.Message, state: FSMContext, lang: str):
     """Process the selected date"""
     try:
-        # Get the date from callback data or message text
-        if hasattr(message, 'text'):
-            if message.text.startswith('date_'):
-                date_type = message.text.split('_')[1]
-                if date_type == 'today':
-                    date = translations[lang]['today']
-                elif date_type == 'tomorrow':
-                    date = translations[lang]['tomorrow']
-                elif date_type == 'day_after_tomorrow':
-                    date = translations[lang]['day_after_tomorrow']
-                else:
-                    date = translations[lang]['other_date']
-            else:
-                date = message.text
+        # Get the date from callback data
+        date_type = message.text.split('_')[1]
+        if date_type == 'today':
+            date = translations[lang]['today']
+        elif date_type == 'tomorrow':
+            date = translations[lang]['tomorrow']
+        elif date_type == 'day_after_tomorrow':
+            date = translations[lang]['day_after_tomorrow']
         else:
             date = translations[lang]['other_date']
             

@@ -253,41 +253,20 @@ async def appointment_phone(message: types.Message, state: FSMContext):
     await process_phone(message, state, lang)
 
 @dp.callback_query(lambda c: c.data.startswith('date_'))
-async def appointment_date_callback(callback: types.CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    lang = user_languages.get(user_id, 'ru')
-    
+async def appointment_date(callback_query: types.CallbackQuery, state: FSMContext):
+    """Handle date selection"""
     try:
-        # Get the date type from callback data
-        date_type = callback.data.split('_')[1]
-        
-        # Create a message object with the date text
-        message = types.Message(
-            message_id=callback.message.message_id,
-            date=callback.message.date,
-            chat=callback.message.chat,
-            text=callback.data
-        )
+        # Get user's language
+        lang = user_languages.get(callback_query.from_user.id, 'ru')
         
         # Process the date selection
-        await process_date(message, state, lang)
-        await callback.answer()
+        await process_date(callback_query.message, state, lang)
+        
+        # Answer the callback query
+        await callback_query.answer()
     except Exception as e:
-        print(f"Error in date callback: {e}")
-        await callback.message.answer(translations[lang]['error_occurred'])
-        await state.clear()
-
-@dp.message(AppointmentStates.waiting_for_date)
-async def appointment_date(message: types.Message, state: FSMContext):
-    user_id = message.from_user.id
-    lang = user_languages.get(user_id, 'ru')
-    await process_date(message, state, lang)
-
-@dp.callback_query(lambda c: c.data.startswith('appointment_service_'))
-async def appointment_service(callback: types.CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    lang = user_languages.get(user_id, 'ru')
-    await process_service_selection(callback, state, lang)
+        print(f"Error in appointment_date handler: {e}")
+        await callback_query.answer(translations[lang]['error_occurred'])
 
 @dp.callback_query(lambda c: c.data == "make_another_appointment")
 async def make_another_appointment(callback: types.CallbackQuery, state: FSMContext):
